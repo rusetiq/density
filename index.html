@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Density Drop</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+
+    :root {
+      --paper:#fdfaf5;
+      --panel:#f2e9df;
+      --ink:#231b17;
+      --muted:#77685f;
+      --orange:#ed6a2c;
+      --water:#dbe9ef;
+      --water-line:#76a5bd;
+    }
+
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; }
+    body {
+      margin:0;
+      padding:22px;
+      color:var(--ink);
+      font-family:"Fraunces",Georgia,serif;
+      background:
+        radial-gradient(circle at 25% 20%,rgba(35,27,23,.045) 0 .6px,transparent .8px) 0 0/12px 12px,
+        var(--paper);
+    }
+    button { font:inherit; }
+    .app { max-width:1200px; margin:auto; }
+    .topbar,.panel-head,.result-top { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .topbar { margin-bottom:18px; }
+    .brand { display:flex; align-items:center; gap:10px; color:#38271e; font-size:20px; font-weight:600; }
+    .brand-mark { width:38px; height:38px; display:grid; place-items:center; border:1.6px solid; border-radius:12px; transform:rotate(-6deg); }
+    .toolbar { display:flex; flex-wrap:wrap; gap:9px; justify-content:flex-end; }
+    .btn {
+      min-height:43px;
+      padding:9px 17px;
+      border:1.5px solid var(--ink);
+      border-radius:22px 19px 23px 18px;
+      background:var(--paper);
+      box-shadow:1px 2px 0 rgba(35,27,23,.16);
+      font-family:"DM Sans",sans-serif;
+      font-size:14px;
+      cursor:pointer;
+    }
+    .btn:hover,.btn.active { color:#a73d0e; border-color:#a73d0e; background:#fff4ea; }
+    .layout { display:grid; grid-template-columns:minmax(380px,.95fr) minmax(0,1.35fr); gap:22px; align-items:start; }
+    .panel { border:1.5px solid var(--ink); border-radius:14px 11px 15px 10px; background:var(--panel); box-shadow:3px 4px 0 rgba(35,27,23,.08); }
+    .library,.tank-panel { padding:22px; }
+    .panel-head { align-items:flex-end; margin-bottom:16px; }
+    .panel-head h2 { margin:0; color:#38271e; font-size:34px; line-height:1; text-transform:lowercase; }
+    .panel-head span { color:var(--muted); font-family:"DM Sans",sans-serif; font-size:12px; }
+    .items { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .item-card {
+      position:relative;
+      min-height:145px;
+      padding:9px 10px 11px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:flex-end;
+      gap:4px;
+      overflow:hidden;
+      border:1.4px solid var(--ink);
+      border-radius:11px 14px 10px 13px;
+      background:rgba(253,250,245,.88);
+      box-shadow:1px 2px 0 rgba(35,27,23,.1);
+      cursor:grab;
+      touch-action:none;
+      text-align:left;
+    }
+    .item-card:nth-child(3n+2) { transform:rotate(.35deg); }
+    .item-card:nth-child(3n) { transform:rotate(-.3deg); }
+    .item-card:active { cursor:grabbing; }
+    .item-card.selected { border-color:#b34212; box-shadow:0 0 0 3px rgba(237,106,44,.17); }
+    .item-art { width:74px; height:74px; margin:auto auto 2px; display:block; object-fit:contain; pointer-events:none; }
+    .item-name { color:#3b2a20; font-size:16px; font-weight:600; line-height:1.05; }
+    .item-density { color:var(--muted); font-family:"DM Sans",sans-serif; font-size:11px; }
+    .hidden-density .item-density { visibility:hidden; }
+    .drop-helper { margin-top:16px; padding:13px 15px; border-left:4px solid var(--orange); background:rgba(253,250,245,.9); font-size:16px; line-height:1.35; }
+    .tank-wrap { position:relative; height:560px; overflow:hidden; border:1.5px solid var(--ink); border-radius:12px 10px 14px 11px; background:var(--paper); }
+    .air-label,.water-label,.water::after,.tank-drop-note { font-family:"DM Sans",sans-serif; }
+    .air-label { position:absolute; top:14px; left:16px; z-index:2; color:var(--muted); font-size:12px; }
+    .water {
+      position:absolute;
+      inset:auto 0 0;
+      height:72%;
+      border-top:2px solid var(--water-line);
+      background:repeating-linear-gradient(0deg,rgba(118,165,189,.09) 0 11px,transparent 11px 24px),var(--water);
+    }
+    .water-label { position:absolute; top:17px; left:16px; z-index:2; color:#315f78; font-size:13px; text-shadow:0 1px var(--paper),1px 0 var(--paper); }
+    .water::after { content:"density = 1.00 g/cm³"; position:absolute; top:17px; right:14px; z-index:2; color:#315f78; font-size:12px; text-shadow:0 1px var(--paper),1px 0 var(--paper); }
+    .tank-drop-note { position:absolute; top:46px; left:50%; z-index:3; transform:translateX(-50%) rotate(-.4deg); width:max-content; max-width:80%; padding:7px 12px; border:1.4px solid; border-radius:20px 18px 21px 17px; background:var(--paper); color:#685a51; font-size:12px; }
+    .tank-wrap.drag-over { outline:4px solid rgba(237,106,44,.34); outline-offset:-6px; }
+    .tank-object { position:absolute; left:50%; z-index:5; width:104px; height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:translateX(-50%); transition:top 520ms cubic-bezier(.35,.05,.72,.55),left 350ms ease,transform 350ms ease; }
+    .tank-object img { width:78px; height:68px; object-fit:contain; filter:drop-shadow(1px 2px 0 rgba(35,27,23,.12)); }
+    .tank-object .label { margin-top:-2px; padding:2px 7px; border-radius:10px; background:rgba(253,250,245,.86); color:#3b2a20; font-size:12px; font-weight:600; text-align:center; }
+    .tank-object.sunk { transform:translateX(-50%) rotate(4deg); }
+    .tank-object.floating { animation:bob 2.6s ease-in-out infinite; }
+    @keyframes bob { 0%,100%{transform:translateX(-50%) rotate(-1deg)} 50%{transform:translateX(-50%) translateY(-5px) rotate(1deg)} }
+    .result { min-height:126px; margin-top:14px; padding:17px; border:1.5px solid var(--ink); border-radius:12px 14px 10px 13px; background:var(--paper); }
+    .result h3 { margin:0; color:#38271e; font-size:27px; line-height:1.05; text-transform:lowercase; }
+    .result p { margin:8px 0 0; color:#5d4d44; font-size:16px; line-height:1.4; }
+    .badge { min-height:30px; padding:5px 10px; border:1.4px solid; border-radius:18px; font-family:"DM Sans",sans-serif; font-size:11px; white-space:nowrap; }
+    .badge.orange { color:#a73d0e; border-color:#a73d0e; }
+    .drag-ghost { position:fixed; z-index:9999; width:92px; pointer-events:none; transform:translate(-50%,-50%) rotate(-4deg); }
+    .drag-ghost img { display:block; width:88px; height:78px; object-fit:contain; filter:drop-shadow(2px 3px 1px rgba(35,27,23,.18)); }
+    .drag-ghost span { display:block; margin-top:-4px; padding:3px 7px; border:1px solid; border-radius:10px; background:var(--paper); font-size:11px; font-weight:600; text-align:center; }
+
+    @media (max-width:900px) { body{padding:14px}.layout{grid-template-columns:1fr}.items{grid-template-columns:repeat(4,minmax(0,1fr))}.tank-wrap{height:470px} }
+    @media (max-width:650px) { .items{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar{align-items:flex-start}.item-card{min-height:138px} }
+    @media (prefers-reduced-motion:reduce) { *{animation:none!important;transition:none!important} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">↘</div>density drop</div>
+    <div class="toolbar">
+      <button class="btn" id="toggleDensity">show densities</button>
+      <button class="btn" id="clearTank">clear tank</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel library">
+      <div class="panel-head"><h2>objects</h2><span>drag or tap</span></div>
+      <div class="items hidden-density" id="items"></div>
+      <div class="drop-helper" id="helper">Tap an object to select it, then tap the tank. Or drag it straight in.</div>
+    </section>
+    <section class="panel tank-panel">
+      <div class="panel-head"><h2>water tank</h2><span>water density = 1.00 g/cm³</span></div>
+      <div class="tank-wrap" id="tank">
+        <div class="air-label">air</div>
+        <div class="tank-drop-note">drop an object here</div>
+        <div class="water"><div class="water-label">water</div></div>
+      </div>
+      <div class="result" id="result" aria-live="polite">
+        <div class="result-top"><h3>pick an object</h3><span class="badge">waiting</span></div>
+        <p>Drop something into the tank to see whether it floats or sinks.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const objects=[
+  {name:"ping-pong ball",image:"assets/objects/ping-pong-ball.png",density:.08},
+  {name:"cork",image:"assets/objects/cork.png",density:.24},
+  {name:"wood block",image:"assets/objects/wood-block.png",density:.65},
+  {name:"apple",image:"assets/objects/apple.png",density:.84},
+  {name:"ice cube",image:"assets/objects/ice-cube.png",density:.92},
+  {name:"orange",image:"assets/objects/orange.png",density:.94},
+  {name:"plastic cap",image:"assets/objects/plastic-cap.png",density:.95},
+  {name:"toy brick",image:"assets/objects/lego-brick.png",density:1.05},
+  {name:"eraser",image:"assets/objects/eraser.png",density:1.15},
+  {name:"stone",image:"assets/objects/stone.png",density:2.60},
+  {name:"aluminium",image:"assets/objects/aluminium.png",density:2.70},
+  {name:"glass marble",image:"assets/objects/glass-marble.png",density:2.50},
+  {name:"steel spoon",image:"assets/objects/steel-spoon.png",density:7.80},
+  {name:"iron nail",image:"assets/objects/iron-nail.png",density:7.87},
+  {name:"copper coin",image:"assets/objects/copper-coin.png",density:8.96}
+];
+
+const items=document.querySelector("#items");
+const tank=document.querySelector("#tank");
+const result=document.querySelector("#result");
+const helper=document.querySelector("#helper");
+const toggleDensity=document.querySelector("#toggleDensity");
+let selected=null,activeObject=null,ghost=null,dragging=null,showDensities=false,dropRun=0;
+
+function art(obj,className=""){
+  return `<img class="${className}" src="${obj.image}" alt="" draggable="false">`;
+}
+
+function renderItems(){
+  items.innerHTML="";
+  objects.forEach((obj,index)=>{
+    const card=document.createElement("button");
+    card.type="button";
+    card.className="item-card";
+    card.setAttribute("aria-label",`${obj.name}, density ${obj.density.toFixed(2)} grams per cubic centimetre`);
+    card.innerHTML=`${art(obj,"item-art")}<span class="item-name">${obj.name}</span><span class="item-density">ρ ≈ ${obj.density.toFixed(2)} g/cm³</span>`;
+    card.addEventListener("click",()=>selectItem(index));
+    card.addEventListener("pointerdown",event=>startDrag(event,index,card));
+    items.append(card);
+  });
+}
+
+function selectItem(index){
+  selected=index;
+  document.querySelectorAll(".item-card").forEach((card,i)=>card.classList.toggle("selected",i===index));
+  helper.textContent=`${objects[index].name} selected. Tap the tank to drop it.`;
+}
+
+function startDrag(event,index,card){
+  if(event.pointerType==="mouse"&&event.button!==0)return;
+  dragging=index;
+  card.setPointerCapture(event.pointerId);
+  ghost=document.createElement("div");
+  ghost.className="drag-ghost";
+  ghost.innerHTML=`${art(objects[index])}<span>${objects[index].name}</span>`;
+  document.body.append(ghost);
+  moveGhost(event.clientX,event.clientY);
+  card.addEventListener("pointermove",dragMove);
+  card.addEventListener("pointerup",dragEnd,{once:true});
+  card.addEventListener("pointercancel",dragEnd,{once:true});
+}
+
+function moveGhost(x,y){ if(ghost){ghost.style.left=`${x}px`;ghost.style.top=`${y}px`;} }
+function dragMove(event){
+  if(dragging===null)return;
+  moveGhost(event.clientX,event.clientY);
+  const r=tank.getBoundingClientRect();
+  tank.classList.toggle("drag-over",event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom);
+}
+function dragEnd(event){
+  if(dragging===null)return;
+  const r=tank.getBoundingClientRect();
+  const inside=event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom;
+  const index=dragging;
+  dragging=null;tank.classList.remove("drag-over");ghost?.remove();ghost=null;
+  if(inside)dropObject(index,(event.clientX-r.left)/r.width);
+}
+
+tank.addEventListener("click",event=>{
+  if(selected===null)return;
+  const r=tank.getBoundingClientRect();
+  dropObject(selected,(event.clientX-r.left)/r.width);
+});
+
+function dropObject(index,x=.5){
+  const run=++dropRun;
+  const obj=objects[index];
+  activeObject?.remove();
+  activeObject=document.createElement("div");
+  activeObject.className="tank-object";
+  activeObject.innerHTML=`${art(obj)}<span class="label">${obj.name}</span>`;
+  tank.append(activeObject);
+  const half=52;
+  const xPx=Math.max(half+8,Math.min(tank.clientWidth-half-8,x*tank.clientWidth));
+  activeObject.style.left=`${xPx}px`;
+  activeObject.style.top="12px";
+  requestAnimationFrame(()=>{
+    const waterTop=tank.clientHeight*.28;
+    const impactTop=waterTop-46;
+    let top,status,detail;
+    if(obj.density<1){
+      top=waterTop-92*(1-Math.max(.08,Math.min(.98,obj.density)));
+      status="floats";
+      detail=`Density ≈ ${obj.density.toFixed(2)} g/cm³, which is lower than water.`;
+    }else{
+      top=tank.clientHeight-102;
+      status="sinks";
+      detail=`Density ≈ ${obj.density.toFixed(2)} g/cm³, which is greater than water's 1.00 g/cm³.`;
+    }
+    activeObject.style.top=`${impactTop}px`;
+    window.setTimeout(()=>{
+      if(run!==dropRun)return;
+      activeObject.style.transitionTimingFunction="cubic-bezier(.2,.72,.28,1)";
+      activeObject.style.transitionDuration=obj.density<1?"420ms":"760ms";
+      activeObject.style.top=`${Math.max(8,top)}px`;
+      activeObject.classList.add(obj.density<1?"floating":"sunk");
+      result.innerHTML=`<div class="result-top"><h3>${obj.name} ${status}</h3><span class="badge orange">ρ ≈ ${obj.density.toFixed(2)} g/cm³</span></div><p>${detail}</p>`;
+    },500);
+  });
+  selected=null;
+  document.querySelectorAll(".item-card").forEach(card=>card.classList.remove("selected"));
+  helper.textContent="Pick another object and try again.";
+}
+
+toggleDensity.addEventListener("click",()=>{
+  showDensities=!showDensities;
+  items.classList.toggle("hidden-density",!showDensities);
+  toggleDensity.textContent=showDensities?"hide densities":"show densities";
+  toggleDensity.classList.toggle("active",showDensities);
+});
+
+document.querySelector("#clearTank").addEventListener("click",()=>{
+  dropRun++;activeObject?.remove();activeObject=null;
+  result.innerHTML='<div class="result-top"><h3>pick an object</h3><span class="badge">waiting</span></div><p>Drop something into the tank to see whether it floats or sinks.</p>';
+});
+
+renderItems();
+</script>
+</body>
+</html>
